@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/product.dart';
-import '../services/product_service.dart';
+import '../models/item.dart';
+import '../services/firestore_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,7 +10,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final ProductService _service = ProductService();
+  final FirestoreService _service = FirestoreService();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
@@ -33,14 +32,14 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  Stream<QuerySnapshot> _getStream() {
+  Stream<List<Item>> _getStream() {
     if (_searchQuery.isNotEmpty) {
-      return _service.searchProducts(_searchQuery);
+      return _service.searchItems(_searchQuery);
     }
     if (_isFiltering && _minPrice != null && _maxPrice != null) {
-      return _service.filterByPrice(_minPrice!, _maxPrice!);
+      return _service.filterByPriceRange(_minPrice!, _maxPrice!);
     }
-    return _service.getProducts();
+    return _service.getItemsStream();
   }
 
   void _applyFilter() {
@@ -70,17 +69,17 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> _createOrUpdate([DocumentSnapshot? doc]) async {
+  Future<void> _createOrUpdate([Item? item]) async {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
-        if (doc != null) {
-          _nameController.text = doc['name'];
-          _priceController.text = doc['price'].toString();
+        if (item != null) {
+          _nameController.text = item.name;
+          _priceController.text = item.price.toString();
         }
 
         return AlertDialog(
-          title: Text(doc == null ? 'Add Product' : 'Update Product'),
+          title: Text(item == null ? 'Add Product' : 'Update Product'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -126,15 +125,31 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 try {
-                  if (doc == null) {
-                    await _service.addProduct(name, price);
+                  if (item == null) {
+                    await _service.addItem(
+                      Item(
+                        name: name,
+                        quantity: 0, // Default quantity
+                        price: price,
+                        category: 'Other', // Default category
+                      ),
+                    );
                     scaffoldMessenger.showSnackBar(
                       const SnackBar(
                         content: Text('Product added successfully'),
                       ),
                     );
                   } else {
-                    await _service.updateProduct(doc.id, name, price);
+                    await _service.updateItem(
+                      Item(
+                        id: item.id,
+                        name: name,
+                        quantity: item.quantity,
+                        price: price,
+                        category: item.category,
+                        createdAt: item.createdAt,
+                      ),
+                    );
                     scaffoldMessenger.showSnackBar(
                       const SnackBar(
                         content: Text('Product updated successfully'),
@@ -151,7 +166,7 @@ class _HomePageState extends State<HomePage> {
                   );
                 }
               },
-              child: Text(doc == null ? 'Add' : 'Update'),
+              child: Text(item == null ? 'Add' : 'Update'),
             ),
           ],
         );
@@ -159,10 +174,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _deleteProduct(String productId) async {
+  Future<void> _deleteProduct(String itemId) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
-      await _service.deleteProduct(productId);
+      await _service.deleteItem(itemId);
       scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text('Product deleted successfully')),
       );
@@ -231,9 +246,8 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
 
-            // Product List
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
+              child: StreamBuilder<List<Item>>(
                 stream: _getStream(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
@@ -254,7 +268,7 @@ class _HomePageState extends State<HomePage> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Center(
                       child: Text(
                         'No products found',
@@ -264,20 +278,19 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   return ListView.builder(
-                    itemCount: snapshot.data!.docs.length,
+                    itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
-                      final doc = snapshot.data!.docs[index];
-                      final product = Product.fromDoc(doc);
+                      final item = snapshot.data![index];
 
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         child: ListTile(
                           title: Text(
-                            product.name,
+                            item.name,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
-                            '\$${product.price.toStringAsFixed(2)}',
+                            '\$${item.price.toStringAsFixed(2)}',
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
                               fontSize: 16,
@@ -288,11 +301,12 @@ class _HomePageState extends State<HomePage> {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.edit),
-                                onPressed: () => _createOrUpdate(doc),
+                                onPressed: () =>
+                                    _createOrUpdate(snapshot.data![index]),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete),
-                                onPressed: () => _deleteProduct(doc.id),
+                                onPressed: () => _deleteProduct(item.id!),
                               ),
                             ],
                           ),

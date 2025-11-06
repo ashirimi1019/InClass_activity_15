@@ -38,17 +38,17 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDjgyveaxiPcuxkqtp5UryvBa1PXb5fo98',
-    appId: '1:480601990521:web:ed99fb8c542734984ffba8',
+    appId: '1:480601990521:web:4b6f324e0d06a3974ffba8',
     messagingSenderId: '480601990521',
     projectId: 'mad-inclass14-ashir',
     authDomain: 'mad-inclass14-ashir.firebaseapp.com',
     storageBucket: 'mad-inclass14-ashir.firebasestorage.app',
-    measurementId: 'G-PLWN8RWEK8',
+    measurementId: 'G-HR313N3QVK',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBCjAIaJl0OIjdq1xoaLyVCxqVTtTj49kw',
-    appId: '1:480601990521:android:c3c8300345d070b64ffba8',
+    appId: '1:480601990521:android:0a952215242523ac4ffba8',
     messagingSenderId: '480601990521',
     projectId: 'mad-inclass14-ashir',
     storageBucket: 'mad-inclass14-ashir.firebasestorage.app',
@@ -74,12 +74,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyDjgyveaxiPcuxkqtp5UryvBa1PXb5fo98',
-    appId: '1:480601990521:web:a731a8f58568c9154ffba8',
+    appId: '1:480601990521:web:4b6f324e0d06a3974ffba8',
     messagingSenderId: '480601990521',
     projectId: 'mad-inclass14-ashir',
     authDomain: 'mad-inclass14-ashir.firebaseapp.com',
     storageBucket: 'mad-inclass14-ashir.firebasestorage.app',
-    measurementId: 'G-S0C57WYG1L',
+    measurementId: 'G-HR313N3QVK',
   );
 
 }
